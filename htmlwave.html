@@ -19,6 +19,9 @@
                 --fil-bk: var(--light-blue);
                 --fil-ft: var(--black);
 
+                --stt-bk: yellow;
+                --stt-ft: black;
+
                 --ttl-bk: var(--bright-blue);
                 --ttl-ft: var(--black);
 
@@ -48,6 +51,24 @@
                 color:            var(--fil-ft);
 
                 font-family:      Arial;
+            }
+
+            /* Styles for the status. */
+            .status-clear {
+                font-family: Arial;
+
+                height:      22px;
+            }
+            .status-warning {
+                background-color: var(--stt-bk);
+                color:            var(--stt-ft);
+                border-color:     var(--stt-ft);
+
+                font-family: Arial;
+
+                outline: solid 1px;
+
+                height:      22px;
             }
 
             /* Style for the titles. */
@@ -149,11 +170,14 @@
     </head>
     <body>
 
-        <div id="file" style="float:top;">
-            <input type="file" accept=".vcd, .VCD" id="fileSelect" class="file"
-                   onchange="readFile(this)" value='./hruby_simulator.vcd' />
-            <button style="margin-left:-5px;" id="reloadButton">&#8635;</button>
-            <a style="float:right; margin-right:6px"
+        <div id="file" style="display:flex; float:top;">
+            <input type="file" accept=".vcd, .VCD" id="fileSelect" 
+                   class="file" style="float:left" onchange="readFile(this)" />
+            <button id="reloadButton"
+                style="float:left; margin-left:-5px;">&#8635;</button>
+            <div id="status" class="status-clear"
+                style="flex-grow:1; margin-left:6px"></div>
+            <a style="float:right; margin-right:6px; margin-left:6px"
                 href="LICENSE.txt">License</a>
             <button id="help" style="float:right; margin-right:2%"
                     onclick="window.open('README.txt')">Help</button>
@@ -689,17 +713,31 @@
             // Read a wave and update the wave viewer accordingly.
             function readWave(str) {
                 const wave = read_vcd(str);
-                document.getElementById('sigsel').innerHTML = selectSignal(wave);
-                // Update the signal selector if new file.
-                refreshSelectSignal(wave);
-                runSelectSignal();
-                // Update the zoom.
-                refreshZoom(wave);
-                showZoom();
-                // Build the viewer.
-                buildViewer(wave);
-                // Update the ruler viewer.
-                showRuler();
+                const status = document.getElementById('status');
+                if (wave instanceof Wave) {
+                    document.getElementById('sigsel').innerHTML = 
+                        selectSignal(wave);
+                    // Update the signal selector if new file.
+                    refreshSelectSignal(wave);
+                    runSelectSignal();
+                    // Update the zoom.
+                    refreshZoom(wave);
+                    showZoom();
+                    // Build the viewer.
+                    buildViewer(wave);
+                    // Update the ruler viewer.
+                    showRuler();
+                    // Indicate the status is OK (i.e., clears the status).
+                    status.innerHTML='';
+                    status.classList.remove('status-warning');
+                    status.classList.add('status-clear');
+                }
+                else {
+                    // The file could not be load, show it in the status.
+                    status.innerHTML='&nbsp;&#9888; Invalid file!';
+                    status.classList.remove('status-clear');
+                    status.classList.add('status-warning');
+                }
             }
 
             // Read a file.

@@ -465,6 +465,11 @@ function read_vcd(str) {
             default:
         }
     }
+    // Where there a touble?
+    if (samples.length < 1) {
+        // Yes, return an undefined value.
+        return undefined;
+    }
 
     // Remove the last sample if its end is not defined.
     if (!samples[samples.length-1].end) {
