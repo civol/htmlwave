@@ -27,29 +27,6 @@ class CanvasWave {
     // Add a signal to draw.
     add(sig) {
         this._signals.push(sig);
-        // // Also resize if required.
-        // let newHeight = this._signals.length * (this._size*2 + this._space) + 
-        //     this._top;
-        // console.log("Height: " + this.height + " to " + newHeight + "(" + this._canvas.height + "," + this._canvas.style.height + ")" );
-        // if (newHeight > this.height) {
-        //     console.log("Resizing from: " + this.height + " to " + newHeight);
-        //     // Get the DPR and size of the canvas
-        //     const dpr = window.devicePixelRatio;
-        //     const rect = this._canvas.getBoundingClientRect();
-
-        //     // Set the "actual" size of the canvas
-        //     // this._canvas.width = rect.width * dpr;
-        //     // this._canvas.height = rect.height * dpr;
-        //     // this._canvas.height = newHeight * dpr;
-
-        //     // Scale the context to ensure correct drawing operations
-        //     // this._context.scale(dpr, dpr);
-
-        //     // Set the "drawn" size of the canvas
-        //     // this._canvas.style.width = `${rect.width}px`;
-        //     // this._canvas.style.height = `${rect.height}px`;
-        //     this._canvas.style.height = `${rect.newHeight}px`;
-        // }
     }
 
     // Delete a signal to draw.
@@ -85,7 +62,6 @@ class CanvasWave {
     // Get the display width in pixels.
     get width() {
         return this._canvas.getBoundingClientRect().width;
-        // return this._canvas.width;
     }
 
     // Get the display width in time unit.
@@ -96,7 +72,6 @@ class CanvasWave {
     // Get the display height in pixels.
     get height() {
         return this._canvas.getBoundingClientRect().height;
-        // return this._canvas.height;
     }
 
     // Get the height of one signal display.
@@ -185,7 +160,6 @@ class CanvasWave {
         step = step * Math.pow(10,count);
 
         // Compute the postion of the first gradation.
-        // let first_pos = Math.trunc((this.start + step) % step);
         let first_pos = step - this.start % step;
         if (first_pos == step) { first_pos = 0; }
         let pos = first_pos;

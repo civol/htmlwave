@@ -5,8 +5,6 @@
         <title>HTMLwave</title>
 
 
-
-
         <style>
             /* Global color palette definition. */
             :root {
@@ -149,7 +147,7 @@
     <body>
 
         <div id="file" style="float:top;">
-            <input type="file" id="fileSelect" class="file"
+            <input type="file" accept=".vcd, .VCD" id="fileSelect" class="file"
                    onchange="readFile(this)" value='./hruby_simulator.vcd' />
             <button style="margin-left:-5px;" id="reloadButton">&#8635;</button>
             <a style="float:right; margin-right:6px"
@@ -693,8 +691,11 @@
                 runSelectSignal();
                 // Update the zoom.
                 refreshZoom(wave);
+                showZoom();
                 // Build the viewer.
                 buildViewer(wave);
+                // Update the ruler viewer.
+                showRuler();
             }
 
             // Read a file.
