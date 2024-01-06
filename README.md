@@ -4,12 +4,13 @@ HTMLWave: an HTML5-based wave viewer
 HTMLWave is an HTML5-based wave viewer compatible with recent web browsers. It
 can read standard Verilog HDL VCD files and present their contents graphically.
 
-Version: 1.0.2
+Version: 1.0.3
 
 Usage:
 ------
 
- * To start HTMLWave, open the "htmlwave.html" file in a web browser.
+ * To start HTMLWave, open the [htmlwave.html](htmlwave.html) file in a web
+   browser.
 
  * To read a VCD file, press the "Choose File" (or "Browse") button and select
    the file you wish to read. Once loaded, the "Signal selection" pane will
