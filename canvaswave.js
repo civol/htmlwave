@@ -10,8 +10,9 @@ class CanvasWave {
         this._context  = this._canvas.getContext("2d");
         this._palette  = pal;
         this._wave     = wave;
-        // Initialize the zoom factor and position.
+        // Initialize the zoom factor compress level and position.
         this._zoom     = 100;
+        this._compress = 10;
         this._position = 0;
         // Initialize the list of signal drawings.
         this._signals  = [];
@@ -26,6 +27,16 @@ class CanvasWave {
 
     // Add a signal to draw.
     add(sig) {
+        // Create its compress levels.
+        sig.cclear(); // Ensure we start afresh.
+        let l = 10.0;
+        // Create 10 level of compression with power of 10 lengths.
+        for(let i = 0; i<10; ++i) {
+            sig.compress(l);
+            sig.clevel += 1;
+            l = l*10.0;
+        }
+        // Add the signal.
         this._signals.push(sig);
     }
 
@@ -35,12 +46,28 @@ class CanvasWave {
     }
 
     // Update the zoom factor.
+    // Also updates the current compress level.
     set zoom(z) {
         this._zoom = z;
+        this.update_clevel();
+    }
+
+    // Update the value of the clevel using the number of units per pixels.
+    update_clevel() {
+        this._clevel = Math.trunc(Math.log10((this.end-this.start)/this.width));
+        // console.log("toPx(1.0)=" + (this.width / (this.end-this.start)) + " clevel=" + this._clevel);
+        if (this._clevel < 0) { this._clevel = 0; }
+        if (this._clevel > 9) { this._clevel = 9; }
+    }
+
+    // Get the current compress level.
+    get clevel() {
+        return this._clevel;
     }
 
     // Update the position.
     set position(pos) {
+        console.log("new position: " + pos);
         this._position = pos;
     }
 
@@ -106,15 +133,44 @@ class CanvasWave {
         return this._context.measureText(txt).width;
     }
 
+    // Binary search of the index of a segment overlapping a position.
+    search_by_position(segs,pos) {
+        let idxS = 0;
+        let idxE = segs.length-1;
+        let idxM = Math.trunc((idxE+idxS) / 2);
+        while(idxS < idxE) {
+            // console.log("pos=" + pos +
+            //     " segs[idxM].start=" + segs[idxM].start + 
+            //     " segs[idxM].end=" + segs[idxM].end + 
+            //     " idxS=" + idxS + " idxE=" + idxE + " idxM=" + idxM);
+            if (segs[idxM].start <= pos) {
+                if (segs[idxM].end >= pos) {
+                    // Found.
+                    return idxM;
+                } else {
+                    // Not found and too much on the right.
+                    idxS = idxM + 1;
+                }
+            } else {
+                // Not found and too much on the left.
+                idxE = idxM - 1;
+            }
+            idxM = Math.trunc((idxE+idxS) / 2);
+        }
+        /* End of iteration, return idxM as is. */
+        return idxM;
+    }
+
 
     // Get the value of signal sig at the ruler position.
     value(sig) {
-        for(let seg of sig.segs) {
-            if (seg.start <= this._ruler && seg.end > this._ruler)  {
-                return seg.value;
-            }
-        }
-        return "?";
+        // for(let seg of sig.csegs[0]) { // Use the non-compressed segments.
+        //     if (seg.start <= this._ruler && seg.end > this._ruler)  {
+        //         return seg.value;
+        //     }
+        // }
+        let idx = this.search_by_position(sig.csegs[0],this._ruler);
+        return idx == -1 ? "?" : sig.csegs[0][idx].value;
     }
 
 
@@ -124,7 +180,8 @@ class CanvasWave {
         this._context.clearRect(0, 0, this.width, this.height);
     }
 
-    // Display the time axis.
+
+    // Draw the axis and waves.
     draw() {
         // Estimate the number of gradations.
         let num = Math.trunc(this.width / 40);
@@ -160,8 +217,10 @@ class CanvasWave {
         step = step * Math.pow(10,count);
 
         // Compute the postion of the first gradation.
-        let first_pos = step - this.start % step;
-        if (first_pos == step) { first_pos = 0; }
+        // let first_pos = step - this.start % step;
+        // if (first_pos == step) { first_pos = 0; }
+        let first_pos = this.start - this.start % step + step;
+        if (first_pos > this.start+step) { first_pos -= step; }
         let pos = first_pos;
         this._context.lineWidth = 1;
         this._context.strokeStyle = this._palette.signal;
@@ -174,8 +233,8 @@ class CanvasWave {
 
         // Draw the gradations.
         while(pos < this.end) {
-            this._context.moveTo(this.toPx(pos),14);
-            this._context.lineTo(this.toPx(pos),20);
+            this._context.moveTo(this.toPx(pos-this.start),14);
+            this._context.lineTo(this.toPx(pos-this.start),20);
             pos += step;
         }
         // Draw the axis.
@@ -194,10 +253,15 @@ class CanvasWave {
         this._context.font = "14px Courier New"; // Bigger font for signals.
         let y = this._top;
         for(sig of this._signals) {
+            // Set the compress level for draing the signal.
+            sig.clevel = this.clevel
             // console.log("sig=" + sig.id + " y=" + y);
             if (sig.type > 1) {
+                // Get the range of segments to draw.
+                let drawS = this.search_by_position(sig.segs,this.start);
+                let drawE = this.search_by_position(sig.segs,this.end);
                 // Multi-bit case.
-                for(let i in sig.segs) {
+                for(let i = drawS; i<=drawE; ++i) {
                     let seg = sig.segs[i];
                     // console.log(" seg: " + seg.start + "," + seg.end + " " + seg.value);
                     if(seg.start < this.end && seg.end > this.start) {
@@ -211,8 +275,14 @@ class CanvasWave {
                         if (x1 >= this.width-1) { x1 = this.width-1; l1 = x1; }
                         if (i >= sig.segs.length-1) { l1 = this.width-1; }
                         // console.log("x0=" + x0 + " x1=" + x1 + " l0=" + l0 + " l1=" + l1);
-                        // Draw the start transition.
-                        if (x0 != 0) {
+                        if (x1 - x0 < this._corner*2 || x0 == 0) {
+                            // Too short segment, or too much to the left.
+                            // Draw only a vertical for start transition.
+                            this._context.moveTo(x0,y-this._size);
+                            this._context.lineTo(x0,y+this._size);
+                            if (x1-x0 < 2) { continue; } // Can end here.
+                        } else {
+                        // Draw a normal start transition.
                             this._context.moveTo(x0+this._corner,y-this._size);
                             this._context.lineTo(x0,y);
                             this._context.lineTo(x0+this._corner,y+this._size);
@@ -240,7 +310,13 @@ class CanvasWave {
                         }
 
                         // Draw the end transition.
-                        if (x1 != this.width-1 && i < sig.segs.length-1) {
+                        if (x1 == this.width-1 || i >= sig.segs.length-1 ||
+                            x1-x0 < this._corner*2) {
+                            // Too short segment, or too much to the right.
+                            // Draw only a vertical for start transition.
+                            this._context.moveTo(x1,y-this._size);
+                            this._context.lineTo(x1,y+this._size);
+                        } else {
                             this._context.moveTo(x1-this._corner,y-this._size);
                             this._context.lineTo(x1,y);
                             this._context.lineTo(x1-this._corner,y+this._size);
@@ -250,19 +326,35 @@ class CanvasWave {
             }
             else {
                 // Single-bit case.
-                for(let i in sig.segs) {
+                // Get the range of segments to draw.
+                let drawS = this.search_by_position(sig.segs,this.start);
+                let drawE = this.search_by_position(sig.segs,this.end);
+                // console.log("this.start=" + this.start +
+                //     " this.end=" + this.end + " drawS=" + drawS +
+                //     " drawE=" + drawE);
+                // Do the drawning.
+                let pX = -10;
+                for(let i = drawS; i<=drawE; ++i) {
                     let seg = sig.segs[i];
                     // console.log(" seg: " + seg.start + "," + seg.end + " " + seg.value);
-                    if(seg.start < this.end && seg.end > this.start) {
+                    if(seg.start >= this.end) {
+                        // Nothing to draw any longer.
+                        break;
+                    }
+                    if(seg.end > this.start) {
                         // Can draw.
+                        // Compute the end and check if it worth it to draw.
+                        let x1 = this.toPx(seg.end-this.start);
+                        if (x1 >= this.width-1) { x1 = this.width-1; }
+                        if (x1 - pX < 2) { continue; }
+                        pX = x1;
                         // Compute the start.
                         let x0 = this.toPx(seg.start-this.start);
                         if (x0 <= 0) { x0 = 0; }
-                        let x1 = this.toPx(seg.end-this.start);
-                        if (x1 >= this.width-1) { x1 = this.width-1; }
                         // Draw the start transition.
                         this._context.moveTo(x0,y-this._size);
                         this._context.lineTo(x0,y+this._size);
+                        if (x1 - x0 < 2) { continue }
                         // Draw the value lines.
                         // console.log("seg.value=" + seg.value);
                         switch(seg.value) {
@@ -315,18 +407,20 @@ class CanvasWave {
         }
         // Place the gradation values.
         pos = first_pos;
-        let val = Math.trunc(this.start / (step*textFac)) * (step*textFac);
-        if (this.start % (step*textFac) != 0) { val += step*textFac*2; }
-        if (this.start % (step*textFac) != 0) { pos += step; }
-        if (this.start % (step*textFac) > step) { pos -= step; }
+        // let val = Math.trunc(this.start / (step*textFac)) * (step*textFac);
+        // let val = first_pos - first_pos % (step*textFac);
+        // if (this.start % (step*textFac) != 0) { val += step*textFac*2; }
+        // if (this.start % (step*textFac) != 0) { pos += step; }
+        // if (this.start % (step*textFac) > step) { pos -= step; }
         while(pos < this.end) {
-            let txt = val.toString();
-            let x = Math.round(this.toPx(pos)-this.textWidth(txt)/2)-1;
+            // let txt = val.toString();
+            let txt = pos.toString();
+            let x =Math.round(this.toPx(pos-this.start)-this.textWidth(txt)/2)-1;
             if (x<0 && pos == 0) { x = 0; }
             /* No text overlap, can display. */
             this._context.fillText(txt, x , 12);
             pos += step * textFac;
-            val += step * textFac;
+            // val += step * textFac;
         }
     }
 }

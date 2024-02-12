@@ -367,6 +367,8 @@
 
             // Add a signal.
             function addSignal(sig) {
+                // If the signal already present, skip it.
+                if (selectedSignals.includes(sig)) { return; }
                 // Add the signal.
                 selectedSignals.push(sig);
                 viewer.add(sig);
@@ -479,26 +481,29 @@
 
             // Handle the zoom.
             let zoom = 50;
-            let zoomStep = 1;
+            // let zoomStep = 1;
+            let zoomScale = 100.0;
             let zoomSlider     = document.getElementById("zoomSlider");
             let zoomUpButton   = document.getElementById("zoomUpButton");
             let zoomDownButton = document.getElementById("zoomDownButton");
 
             let zoomOutput = document.getElementById("zoom");
 
-            // Refresh the zoom for a wave.
-            function refreshZoom(wave) {
-                zoomStep = Math.max(0.1,1000 / wave.length);
-            }
+            // // Refresh the zoom for a wave.
+            // function refreshZoom(wave) {
+            //     zoomStep = Math.max(0.1,1000 / wave.length);
+            // }
 
-            // Display the zoom value.
+            // Display the zoom (and scale) value.
             function showZoom() { 
                 let zVal = zoom.toFixed(2);
                 if (zVal.length<5) {
-                    zoomOutput.innerHTML = "zoom: 0" + zoom.toFixed(2); 
+                    zoomOutput.innerHTML = "zoom: 0" + zoom.toFixed(4) +
+                        " (digit: " + Math.log10(zoomScale/100).toFixed(0) + ")";
                 }
                 else {
-                    zoomOutput.innerHTML = "zoom: " + zoom.toFixed(2); 
+                    zoomOutput.innerHTML = "zoom: " + zoom.toFixed(4) +
+                        " (digit: " + Math.log10(zoomScale/100).toFixed(0) + ")";
                 }
             }
 
@@ -508,23 +513,29 @@
             // Update the current slider value.
             // From the slider.
             zoomSlider.oninput = function() {
-                zoom = parseFloat(this.value);
+                zoom = Math.trunc(zoom/zoomScale)*zoomScale + 
+                       parseFloat(this.value/100.0)*zoomScale;
                 showZoom();
                 showViewer();
             }
             // From the down button.
             zoomDownButton.onclick = function() {
-                if (zoom > 1) { zoom -= zoomStep; }
-                if (zoom < 1) { zoom = 1; }
-                zoomSlider.value = zoom;
+                // if (zoom > 1) { zoom -= zoomStep; }
+                // if (zoom < 1) { zoom = 1; }
+                zoomScale /= 100;
+                // zoomSlider.value = zoom;
+                zoomSlider.value = zoom-Math.trunc(zoom/zoomScale)*zoomScale;
                 showZoom();
                 showViewer();
             }
             // From the up button.
             zoomUpButton.onclick = function() {
-                if (zoom < 99) { zoom += zoomStep; }
-                if (zoom > 99) { zoom = 99; }
-                zoomSlider.value = zoom;
+                // if (zoom < 99) { zoom += zoomStep; }
+                // if (zoom > 99) { zoom = 99; }
+                zoomScale *= 100;
+                if (zoomScale > 100.0) { zoomScale = 100.0; }
+                // zoomSlider.value = zoom;
+                zoomSlider.value = zoom-Math.trunc(zoom/zoomScale)*zoomScale;
                 showZoom();
                 showViewer();
             }
@@ -533,15 +544,15 @@
 
             // Handle the start position of the viewer.
             let position = 0;
-            let posStep  = 1;
+            // let posStep  = 1;
             let posSlider    = document.getElementById("posSlider");
             let posUpButton  = document.getElementById("posUpButton");
             let posDownButton = document.getElementById("posDownButton");
 
-            // Refresh the position handling for a wave.
-            function refreshPos(wave) {
-                posStep = 100 / wave.length;
-            }
+            // // Refresh the position handling for a wave.
+            // function refreshPos(wave) {
+            //     posStep = 100 / wave.length;
+            // }
 
             // Update the current slider value.
             // From the slider.
@@ -551,14 +562,16 @@
             }
             // From the down button.
             posDownButton.onclick = function() {
-                if (position > 0) { position -= posStep; }
+                // if (position > 0) { position -= posStep; }
+                if (position > 0) { position -= zoomScale/100; }
                 if (position < 0) { position = 0; }
                 posSlider.value = position;
                 showViewer();
             }
             // From the up button.
             posUpButton.onclick = function() {
-                if (position < 1000) { position += posStep; }
+                // if (position < 1000) { position += posStep; }
+                if (position < 1000) { position += zoomScale/100; }
                 if (position > 1000) { position = 1000; }
                 posSlider.value = position;
                 showViewer();
@@ -607,8 +620,8 @@
             // Show the viewer if existing.
             function showViewer() {
                 if (viewer) {
-                    viewer.position = position * (viewer.wave.length-viewer.widthT) / 1000;
                     viewer.zoom = zoom;
+                    viewer.position = position * (viewer.wave.length-viewer.widthT) / 1000;
                     viewer.clear();
                     viewer.draw();
                 }
@@ -721,7 +734,7 @@
                     refreshSelectSignal(wave);
                     runSelectSignal();
                     // Update the zoom.
-                    refreshZoom(wave);
+                    // refreshZoom(wave);
                     showZoom();
                     // Build the viewer.
                     buildViewer(wave);

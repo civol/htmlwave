@@ -119,6 +119,10 @@ class Signal {
         this._subs = [];
         // The stream of values if any.
         this._segs = [];
+        // The compression level.
+        this._clevel = 0
+        // The compressed segments by level.
+        this._csegs = [ this._segs ];
     }
 
     // Add a sub signal.
@@ -176,6 +180,31 @@ class Signal {
         }
     }
 
+    // Clear the compression levels.
+    cclear() {
+        this._csegs = [ this._segs ];
+    }
+
+    // Add a compression level that remove any segment distant less and equal
+    // from its previous by d units.
+    compress(d) {
+        // Compress the current compress level.
+        let segs = this._csegs[this._clevel]
+        // Set up the previously kept segment: at fist it is the first one.
+        let pseg  = segs[0];
+        // The compressed segments.
+        let nsegs = [ pseg ];
+        // Do the compression.
+        for(let seg of segs) {
+            if(seg.end - pseg.start > d) {
+                nsegs.push(seg);
+                pseg = seg;
+            }
+        }
+        // Add the compression.
+        this._csegs.push(nsegs);
+    }
+
     // Set the value mode:
     // 0 or 'b' for binary, 1 or 'd' for decimal, 2 or 'h' for hexadecimal,
     // nothing for rolling mode.
@@ -183,6 +212,9 @@ class Signal {
         for(let seg of this._segs) { seg.mode = m; }
     }
 
+    set clevel(l) { this._clevel = l; }
+
+    get clevel() { return this._clevel; }
 
     get name() { return this._name; }
     
@@ -192,7 +224,11 @@ class Signal {
 
     get subs() { return [...this._subs]; }
 
-    get segs() { return [...this._segs]; }
+    // get segs() { return [...this._segs]; }
+    get segs()    { return this._csegs[this._clevel]; }
+
+    get csegs()   { return this._csegs; }
+
 }
 
 
