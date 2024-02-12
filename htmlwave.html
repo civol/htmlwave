@@ -239,6 +239,8 @@
                             <button class="zoomButton" id="zoomDownButton" style="float:left; margin-top:2px;">-</button>
                             <button class="zoomButton" id="zoomUpButton" style="float:left; margin-top:2px;">+</button>
                         </div>
+                        <button id="centerButton"
+                                style="float:right; margin-top:2px; margin-right:2px;">center</button>
                         <div id="ruler" style="float:right; margin-right:6px">
                             ruler:
                         </div>
@@ -645,6 +647,9 @@
             let rulerOutput = document.getElementById("ruler");
             let rulerHolding = false; // Tell the ruler is holded.
 
+            // The center on ruler button.
+            let centerButton = document.getElementById("centerButton");
+
             // Updating the ruler.
             function updateRuler(ev) {
                 // Reposition the ruler.
@@ -687,6 +692,15 @@
             // Display the ruler time.
             function showRuler() { 
                 rulerOutput.innerHTML = "ruler: " + Math.round(viewer.ruler) + ' ' + viewer.wave.unit; 
+            }
+
+            // Center on the ruler.
+            centerButton.onclick = function() {
+                position = (viewer.ruler - viewer.widthT/2) * 1000 / (viewer.wave.length-viewer.widthT)
+                if (position < 0) { position = 0; }
+                if (position > 1000) { position = 1000; }
+                posSlider.value = position;
+                showViewer();
             }
 
         </script>
