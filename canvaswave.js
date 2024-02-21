@@ -42,7 +42,8 @@ class CanvasWave {
 
     // Delete a signal to draw.
     del(sig) {
-        this._signals.splice(this._signals.indexOf(sig),1);
+	const idx = this._signals.indexOf(sig);
+	if (idx != -1) this._signals.splice(idx,1);
     }
 
     // Update the zoom factor.
@@ -67,7 +68,7 @@ class CanvasWave {
 
     // Update the position.
     set position(pos) {
-        console.log("new position: " + pos);
+        // console.log("new position: " + pos);
         this._position = pos;
     }
 
