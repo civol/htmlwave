@@ -710,7 +710,7 @@
 
         <script>
             let str = ''
-            let reader = new FileReader();
+            const reader = new FileReader();
 
             // Displays a signal and its hierachy.
             function showSignal(sig) {
@@ -769,7 +769,7 @@
 
             // Read a file.
             function readFile(input) {
-                let file = input.files[0];
+                const file = input.files[0];
 
                 reader.readAsText(file);
 
