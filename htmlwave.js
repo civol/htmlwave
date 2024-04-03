@@ -344,6 +344,8 @@ function read_vcd(str) {
     // Process the sections.
     for(let section of sections) {
         section = section.split(/\s+/);
+        // Remove empty sessions that appear in some files generated from windows
+        while(section[0] == "") section.shift();
         switch(state) {
             case 'def':
                 // Definition sessions.
