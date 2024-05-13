@@ -420,7 +420,11 @@ function read_vcd(str) {
                     // Shift seection to go on processing.
                     section.shift();
                 }
-                if (section[0] == '$dumpvars') {
+                if (section[0] == '$comment') {
+                   // Skip comment.
+                   break;
+                }
+                if (section[0] == '$dumpvars' || section[0] == '$dumpall') {
                     // console.log("dumpvars");
                     // Create the first time sample (i.e., initialization)
                     let sample = new Sample(initT);
@@ -455,6 +459,7 @@ function read_vcd(str) {
                 // Rearrange by time steps.
                 let sample = undefined;
                 let value  = undefined;
+                // Process the section.
                 for(let tok of section) {
                     // console.log("tok=" + tok);
                     if (!tok.match(/#\d+/) && firstRun) {
